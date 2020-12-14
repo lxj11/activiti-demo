@@ -1,22 +1,24 @@
 package com.example.activiti.demo.action;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.activiti.engine.ProcessEngine;
 import org.activiti.engine.ProcessEngines;
 import org.activiti.engine.history.HistoricTaskInstance;
-import org.activiti.engine.history.HistoricTaskInstanceQuery;
 import org.activiti.engine.repository.Deployment;
 import org.activiti.engine.repository.ProcessDefinition;
 import org.activiti.engine.runtime.ProcessInstance;
 import org.activiti.engine.task.Task;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.activiti.demo.comment.Result;
+import com.example.activiti.demo.query.GatewayTaskQuery;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -39,16 +41,16 @@ public class ActivitiAction {
 			Deployment deploy = processEngine.getRepositoryService()
 					.createDeployment()
 					.name("请假申请")
-					.addClasspathResource("bpmn/leave.bpmn")
-					.addClasspathResource("bpmn/leave.png")
+					.addClasspathResource("bpmn/parallelGateway1.bpmn")
+					.addClasspathResource("bpmn/parallelGateway1.png")
 					.deploy();
 			//获取仓库服务的实例
 			System.out.println(deploy.getId() + "   " + deploy.getName());
-			return new Result<String>("成功",200, "");
+			return new Result<String>("成功",200, "deployId: "+deploy.getId()+"  name: "+ deploy.getName());
 
 		} catch (Exception e) {
 			System.out.println(e.getStackTrace());
-			return new Result<String>("失败",500, "");
+			return new Result<String>("失败",500, e.toString());
 		}
 	}
 	
@@ -57,13 +59,13 @@ public class ActivitiAction {
 	 */
 	@PostMapping(value = "startProcess")
 	@ApiOperation(value = "启动流程实例")
-	public Result<ProcessInstance> startProcess() {
+	public Result<String> startProcess(String processKey) {
 		// 获取流程引擎对象
 		ProcessEngine processEngine = ProcessEngines.getDefaultProcessEngine();
 		ProcessInstance processInstance = processEngine.getRuntimeService()
-				.startProcessInstanceByKey("myProcess");
-		System.out.println("pid: "+ processInstance.getId() + "  activityId: " + processInstance.getActivityId());
-		return new Result<ProcessInstance>("成功", 200, processInstance);
+				.startProcessInstanceByKey(processKey);
+		System.out.println("pid: "+ processInstance.getId() + "  name: " + processInstance.getName() + " deploymentId: " +processInstance.getDeploymentId());
+		return new Result<String>("成功", 200, "pid: "+ processInstance.getId() + "  name: " + processInstance.getName() + " deploymentId: " +processInstance.getDeploymentId());
 	}
 	
 	/**
@@ -71,14 +73,16 @@ public class ActivitiAction {
 	 */
 	@PostMapping(value = "queryMyTask")
 	@ApiOperation(value = "查看任务")
-	public Result<List<Task>> queryMyTask() {
+	public Result<List<String>> queryMyTask() {
 		// 获取流程引擎对象
 		ProcessEngine processEngine = ProcessEngines.getDefaultProcessEngine();
 		List<Task> list = processEngine.getTaskService().createTaskQuery().list();
+		List<String> taskList = new ArrayList<String>();
 		for (Task task : list) {
 			System.out.println("taskId: " + task.getId() + " taskName: " + task.getName());
+			taskList.add("taskId: " + task.getId() + " taskName: " + task.getName()+ " processDefinitionId: "+task.getProcessDefinitionId());
 		}
-		return new Result<List<Task>>("成功", 200, list);
+		return new Result<List<String>>("成功", 200, taskList);
 	}
 	
 	/**
@@ -99,17 +103,20 @@ public class ActivitiAction {
 	 */
 	@PostMapping(value = "queryProcessDefinition")
 	@ApiOperation(value = "查看流程定义")
-	public Result<List<ProcessDefinition>> queryProcessDefinition() {
+	public Result<List<String>> queryProcessDefinition() {
 		// 获取流程引擎对象
 		ProcessEngine processEngine = ProcessEngines.getDefaultProcessEngine();
 		List<ProcessDefinition> list = processEngine.getRepositoryService().createProcessDefinitionQuery().list();
+		List<String> processDefinitionList = new ArrayList<String>();
 		for (ProcessDefinition processDefinition : list) {
 			System.out.println("id: " + processDefinition.getId());
 			System.out.println("name: " + processDefinition.getName());
 			System.out.println("key: " + processDefinition.getKey());
 			System.out.println("resourceName: " + processDefinition.getResourceName());
+			processDefinitionList.add("id= " + processDefinition.getId() + ",name= " + processDefinition.getName()
+			+ ",key= " + processDefinition.getKey() + ", resourceName=" + processDefinition.getResourceName());
 		}
-		return new Result<List<ProcessDefinition>>("成功", 200, list);
+		return new Result<List<String>>("成功", 200, processDefinitionList);
 	}
 
 	/**
@@ -129,16 +136,35 @@ public class ActivitiAction {
 	 */
 	@PostMapping(value = "queryHistoryTask")
 	@ApiOperation(value = "查询历史任务")
-	public Result<String> queryHistoryTask(String deploymentId) {
+	public Result<List<String>> queryHistoryTask() {
 		// 获取流程引擎对象
 		ProcessEngine processEngine = ProcessEngines.getDefaultProcessEngine();
 		List<HistoricTaskInstance> list = processEngine.getHistoryService().createHistoricTaskInstanceQuery().list();
+		List<String> historicTaskInstanceList = new ArrayList<String>();
+		
 		for (HistoricTaskInstance historicTaskInstance : list) {
 			System.out.println("任务ID： " + historicTaskInstance.getId());
 			System.out.println("流程实例ID： " + historicTaskInstance.getProcessInstanceId());
-			System.out.println("************************");
+			System.out.println("任务名字name： "+ historicTaskInstance.getName());
+			historicTaskInstanceList.add("任务ID= " + historicTaskInstance.getId() + ", 流程实例ID = "+ historicTaskInstance.getProcessDefinitionId() 
+			+ ", 任务名字name= "+ historicTaskInstance.getName());
 		}
-		return new Result<String>("成功", 200, "");
+		return new Result<List<String>>("成功", 200, historicTaskInstanceList);
 	}
+	
+	/**
+	 * 完成任务
+	 */
+	@PostMapping(value = "completeGatewayTask")
+	@ApiOperation(value = "完成网关任务")
+	public Result<String> completeGatewayTask(@RequestBody GatewayTaskQuery gatewaytaskQuery) {
+		// 获取流程引擎对象
+		ProcessEngine processEngine = ProcessEngines.getDefaultProcessEngine();
+		processEngine.getTaskService().complete(gatewaytaskQuery.getTaskId(), gatewaytaskQuery.getVariables());
+		System.out.println("完成任务。。。");
+		return new Result<String>("成功", 200, "完成任务。。。");
+	}
+	
+	
 
 }
