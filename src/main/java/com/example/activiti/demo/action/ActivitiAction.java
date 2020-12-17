@@ -41,8 +41,8 @@ public class ActivitiAction {
 			Deployment deploy = processEngine.getRepositoryService()
 					.createDeployment()
 					.name("请假申请")
-					.addClasspathResource("bpmn/parallelGateway1.bpmn")
-					.addClasspathResource("bpmn/parallelGateway1.png")
+					.addClasspathResource("bpmn/inclusiveGateway.bpmn")
+					.addClasspathResource("bpmn/inclusiveGateway.png")
 					.deploy();
 			//获取仓库服务的实例
 			System.out.println(deploy.getId() + "   " + deploy.getName());
