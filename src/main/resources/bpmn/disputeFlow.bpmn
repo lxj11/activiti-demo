@@ -1,0 +1,362 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:activiti="http://activiti.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" xmlns:tns="http://www.activiti.org/test" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.activiti.org/test" id="m1585102226647" name="">
+  <process id="PFvRjArnDw" name="My process" isExecutable="true" isClosed="false" processType="None">
+    <startEvent id="startEvent" name="开始" activiti:initiator="startEvent" activiti:formKey="开始"/>
+    <userTask id="claimReviewTask" name="复核中" activiti:assignee="review">
+      <extensionElements>
+        <activiti:taskListener event="assignment" expression="${taskStartNotifyListener.notify(task)}"/>
+      </extensionElements>
+    </userTask>
+    <userTask id="claimHandleTask" name="待处理" activiti:assignee="handle">
+      <extensionElements>
+        <activiti:taskListener event="assignment" expression="${taskStartNotifyListener.notify(task)}"/>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="exclusiveCreateGateway" name="争议创建网关"/>
+    <sequenceFlow id="flow1" sourceRef="startEvent" targetRef="exclusiveCreateGateway"/>
+    <sequenceFlow id="claimCreateReviewFlow" name="争议创建复核流" sourceRef="exclusiveCreateGateway" targetRef="claimReviewTask">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${handleSide == 'PLAT' && hasDetection == true}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="claimReviewHandleFlow" name="争议复核处理流" sourceRef="claimReviewTask" targetRef="claimHandleTask"/>
+    <sequenceFlow id="claimCreateHandleFlow" name="争议创建处理流" sourceRef="exclusiveCreateGateway" targetRef="claimHandleTask">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${handleSide == 'SELLER' || (handleSide == 'PLAT' && hasDetection == false)}]]></conditionExpression>
+    </sequenceFlow>
+    <exclusiveGateway id="exclusiveHandleGateway" name="争议处理网关"/>
+    <endEvent id="cancelEvent" name="已作废">
+      <extensionElements>
+        <activiti:executionListener event="end" expression="${endEventStartListener.notify(execution)}"/>
+      </extensionElements>
+    </endEvent>
+    <sequenceFlow id="claimHandleCancelFlow" name="争议处理作废流" sourceRef="exclusiveHandleGateway" targetRef="cancelEvent">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${handleResult == 'DISCARDED'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="claimHandleFlow" name="争议处理流" sourceRef="claimHandleTask" targetRef="exclusiveHandleGateway"/>
+    <userTask id="claimAuditTask" name="待审核" activiti:assignee="audit">
+      <extensionElements>
+        <activiti:taskListener event="assignment" expression="${taskStartNotifyListener.notify(task)}"/>
+      </extensionElements>
+    </userTask>
+    <userTask id="claimUnderReturnTask" name="退车中" activiti:assignee="return">
+      <extensionElements>
+        <activiti:taskListener event="assignment" expression="${taskStartNotifyListener.notify(task)}"/>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="flow7" sourceRef="exclusiveHandleGateway" targetRef="claimAuditTask">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${handleResult == 'PAY' && (totalRealPay > totalSuggestedPay || totalRealPay >= reAuditThreshold || hasNonReviewPay == 'true') && handleSide == 'PLAT'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow8" sourceRef="exclusiveHandleGateway" targetRef="claimUnderReturnTask">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${handleResult == 'RETURN_VEHICLE'}]]></conditionExpression>
+    </sequenceFlow>
+    <endEvent id="closeEvent" name="已关闭">
+      <extensionElements>
+        <activiti:executionListener event="end" expression="${endEventStartListener.notify(execution)}"/>
+      </extensionElements>
+    </endEvent>
+    <sequenceFlow id="flow9" sourceRef="claimUnderReturnTask" targetRef="closeEvent"/>
+    <endEvent id="finishEvent" name="已完成">
+      <extensionElements>
+        <activiti:executionListener event="end" expression="${endEventStartListener.notify(execution)}"/>
+      </extensionElements>
+    </endEvent>
+    <sequenceFlow id="flow10" sourceRef="exclusiveHandleGateway" targetRef="finishEvent">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${handleResult == 'NO_PAY'}]]></conditionExpression>
+    </sequenceFlow>
+    <exclusiveGateway id="exclusivegateway3" name="Exclusive Gateway"/>
+    <sequenceFlow id="flow11" sourceRef="claimAuditTask" targetRef="exclusivegateway3"/>
+    <userTask id="claimReAuditTask" name="待复审" activiti:assignee="reAudit">
+      <extensionElements>
+        <activiti:taskListener event="assignment" expression="${taskStartNotifyListener.notify(task)}"/>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="flow12" sourceRef="exclusivegateway3" targetRef="claimReAuditTask">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${opinion.agreeOrDisagree == 1 && (totalRealPay >= reAuditThreshold || hasNonReviewPay == 'true')}]]></conditionExpression>
+    </sequenceFlow>
+    <userTask id="claimRejectTask" name="已驳回" activiti:assignee="reject">
+      <extensionElements>
+        <activiti:taskListener event="assignment" expression="${taskStartNotifyListener.notify(task)}"/>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="flow17" sourceRef="claimRejectTask" targetRef="exclusiveHandleGateway"/>
+    <sequenceFlow id="flow18" sourceRef="exclusivegateway3" targetRef="claimRejectTask">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${opinion.agreeOrDisagree == 2}]]></conditionExpression>
+    </sequenceFlow>
+    <userTask id="claimAuditedTask" name="待赔付" activiti:assignee="audited">
+      <extensionElements>
+        <activiti:taskListener event="assignment" expression="${taskStartNotifyListener.notify(task)}"/>
+      </extensionElements>
+    </userTask>
+    <exclusiveGateway id="exclusivegateway4" name="Exclusive Gateway" default="flow23"/>
+    <sequenceFlow id="flow20" sourceRef="exclusivegateway3" targetRef="exclusivegateway4">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${opinion.agreeOrDisagree == 1 && (totalRealPay < reAuditThreshold || hasNonReviewPay == 'false')}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow21" sourceRef="claimReAuditTask" targetRef="exclusivegateway4"/>
+    <sequenceFlow id="flow22" sourceRef="exclusivegateway4" targetRef="claimRejectTask">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${opinion != null && opinion.agreeOrDisagree == 2}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow23" sourceRef="exclusivegateway4" targetRef="claimAuditedTask"/>
+    <sequenceFlow id="flow28" sourceRef="exclusiveHandleGateway" targetRef="claimAuditedTask">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${handleResult == 'PAY' && ((totalRealPay <= totalSuggestedPay && totalRealPay < reAuditThreshold && handleSide == 'PLAT' && hasNonReviewPay == 'false') || handleSide == 'SELLER')}]]></conditionExpression>
+    </sequenceFlow>
+    <userTask id="claimWaitOnlinePayTask" name="待线上赔付" activiti:assignee="waitOnlinePay">
+      <extensionElements>
+        <activiti:taskListener event="assignment" expression="${taskStartNotifyListener.notify(task)}"/>
+      </extensionElements>
+    </userTask>
+    <userTask id="claimWaitOfflinePayTask" name="待线下赔付" activiti:assignee="waitOfflinePay">
+      <extensionElements>
+        <activiti:taskListener event="assignment" expression="${taskStartNotifyListener.notify(task)}"/>
+      </extensionElements>
+    </userTask>
+    <inclusiveGateway id="inclusivegateway1" name="Inclusive Gateway"/>
+    <userTask id="claimUnderOnlinePayTask" name="线上付款中" activiti:assignee="underOnlinePay">
+      <extensionElements>
+        <activiti:taskListener event="assignment" expression="${taskStartNotifyListener.notify(task)}"/>
+      </extensionElements>
+    </userTask>
+    <inclusiveGateway id="inclusivegateway2" name="Inclusive Gateway"/>
+    <sequenceFlow id="flow42" sourceRef="inclusivegateway2" targetRef="finishEvent"/>
+    <exclusiveGateway id="exclusivegateway7" name="Exclusive Gateway" default="flow53"/>
+    <sequenceFlow id="flow45" sourceRef="exclusivegateway7" targetRef="closeEvent">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${disputeClose == "true"}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow46" sourceRef="claimAuditedTask" targetRef="inclusivegateway1"/>
+    <inclusiveGateway id="inclusivegateway3" name="Inclusive Gateway"/>
+    <sequenceFlow id="flow47" sourceRef="inclusivegateway3" targetRef="inclusivegateway2">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${disputeClose == "false" || offlineNeedFinish == "true"}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow49" sourceRef="inclusivegateway3" targetRef="closeEvent">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${disputeClose == "true" && offlineNeedFinish == "false"}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow50" sourceRef="inclusivegateway1" targetRef="claimWaitOfflinePayTask">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${hasOffline == "true"}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow51" sourceRef="inclusivegateway1" targetRef="claimWaitOnlinePayTask">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${hasOnline == "true"}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow52" sourceRef="claimWaitOnlinePayTask" targetRef="exclusivegateway7"/>
+    <sequenceFlow id="flow53" sourceRef="exclusivegateway7" targetRef="claimUnderOnlinePayTask"/>
+    <sequenceFlow id="flow54" sourceRef="claimUnderOnlinePayTask" targetRef="inclusivegateway2"/>
+    <sequenceFlow id="flow55" sourceRef="claimWaitOfflinePayTask" targetRef="inclusivegateway3"/>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_PFvRjArnDw">
+    <bpmndi:BPMNPlane bpmnElement="PFvRjArnDw" id="BPMNPlane_PFvRjArnDw">
+      <bpmndi:BPMNShape bpmnElement="startEvent" id="BPMNShape_startEvent">
+        <omgdc:Bounds height="35.0" width="35.0" x="70.0" y="595.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="claimReviewTask" id="BPMNShape_claimReviewTask">
+        <omgdc:Bounds height="55.0" width="105.0" x="327.0" y="585.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="claimHandleTask" id="BPMNShape_claimHandleTask">
+        <omgdc:Bounds height="55.0" width="105.0" x="540.0" y="585.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusiveCreateGateway" id="BPMNShape_exclusiveCreateGateway">
+        <omgdc:Bounds height="40.0" width="40.0" x="180.0" y="592.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusiveHandleGateway" id="BPMNShape_exclusiveHandleGateway">
+        <omgdc:Bounds height="40.0" width="40.0" x="780.0" y="592.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="cancelEvent" id="BPMNShape_cancelEvent">
+        <omgdc:Bounds height="35.0" width="35.0" x="783.0" y="735.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="claimAuditTask" id="BPMNShape_claimAuditTask">
+        <omgdc:Bounds height="55.0" width="105.0" x="930.0" y="465.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="claimUnderReturnTask" id="BPMNShape_claimUnderReturnTask">
+        <omgdc:Bounds height="55.0" width="105.0" x="1460.0" y="465.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="closeEvent" id="BPMNShape_closeEvent">
+        <omgdc:Bounds height="35.0" width="35.0" x="1660.0" y="475.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="finishEvent" id="BPMNShape_finishEvent">
+        <omgdc:Bounds height="35.0" width="35.0" x="2310.0" y="595.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway3" id="BPMNShape_exclusivegateway3">
+        <omgdc:Bounds height="40.0" width="40.0" x="962.0" y="345.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="claimReAuditTask" id="BPMNShape_claimReAuditTask">
+        <omgdc:Bounds height="55.0" width="105.0" x="930.0" y="205.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="claimRejectTask" id="BPMNShape_claimRejectTask">
+        <omgdc:Bounds height="55.0" width="105.0" x="748.0" y="465.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="claimAuditedTask" id="BPMNShape_claimAuditedTask">
+        <omgdc:Bounds height="55.0" width="105.0" x="1286.0" y="78.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway4" id="BPMNShape_exclusivegateway4">
+        <omgdc:Bounds height="40.0" width="40.0" x="1090.0" y="85.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="claimWaitOnlinePayTask" id="BPMNShape_claimWaitOnlinePayTask">
+        <omgdc:Bounds height="55.0" width="105.0" x="1625.0" y="10.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="claimWaitOfflinePayTask" id="BPMNShape_claimWaitOfflinePayTask">
+        <omgdc:Bounds height="55.0" width="105.0" x="1625.0" y="151.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="inclusivegateway1" id="BPMNShape_inclusivegateway1">
+        <omgdc:Bounds height="40.0" width="40.0" x="1515.0" y="85.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="claimUnderOnlinePayTask" id="BPMNShape_claimUnderOnlinePayTask">
+        <omgdc:Bounds height="55.0" width="105.0" x="1959.0" y="10.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="inclusivegateway2" id="BPMNShape_inclusivegateway2">
+        <omgdc:Bounds height="40.0" width="40.0" x="2125.0" y="85.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway7" id="BPMNShape_exclusivegateway7">
+        <omgdc:Bounds height="40.0" width="40.0" x="1825.0" y="17.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="inclusivegateway3" id="BPMNShape_inclusivegateway3">
+        <omgdc:Bounds height="40.0" width="40.0" x="1970.0" y="158.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="flow1" id="BPMNEdge_flow1">
+        <omgdi:waypoint x="105.0" y="612.0"/>
+        <omgdi:waypoint x="180.0" y="612.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="claimCreateReviewFlow" id="BPMNEdge_claimCreateReviewFlow">
+        <omgdi:waypoint x="220.0" y="612.0"/>
+        <omgdi:waypoint x="327.0" y="612.0"/>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="16.0" width="77.0" x="227.0" y="612.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="claimReviewHandleFlow" id="BPMNEdge_claimReviewHandleFlow">
+        <omgdi:waypoint x="432.0" y="612.0"/>
+        <omgdi:waypoint x="540.0" y="612.0"/>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="16.0" width="77.0" x="440.0" y="612.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="claimCreateHandleFlow" id="BPMNEdge_claimCreateHandleFlow">
+        <omgdi:waypoint x="200.0" y="632.0"/>
+        <omgdi:waypoint x="200.0" y="737.0"/>
+        <omgdi:waypoint x="592.0" y="737.0"/>
+        <omgdi:waypoint x="592.0" y="640.0"/>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="16.0" width="77.0" x="330.0" y="719.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="claimHandleCancelFlow" id="BPMNEdge_claimHandleCancelFlow">
+        <omgdi:waypoint x="800.0" y="632.0"/>
+        <omgdi:waypoint x="800.0" y="735.0"/>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="16.0" width="77.0" x="800.0" y="663.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="claimHandleFlow" id="BPMNEdge_claimHandleFlow">
+        <omgdi:waypoint x="645.0" y="612.0"/>
+        <omgdi:waypoint x="780.0" y="612.0"/>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="16.0" width="55.0" x="669.0" y="612.0"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow7" id="BPMNEdge_flow7">
+        <omgdi:waypoint x="820.0" y="612.0"/>
+        <omgdi:waypoint x="982.0" y="612.0"/>
+        <omgdi:waypoint x="982.0" y="520.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow8" id="BPMNEdge_flow8">
+        <omgdi:waypoint x="820.0" y="612.0"/>
+        <omgdi:waypoint x="1512.0" y="612.0"/>
+        <omgdi:waypoint x="1512.0" y="520.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow9" id="BPMNEdge_flow9">
+        <omgdi:waypoint x="1565.0" y="492.0"/>
+        <omgdi:waypoint x="1660.0" y="492.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow10" id="BPMNEdge_flow10">
+        <omgdi:waypoint x="820.0" y="612.0"/>
+        <omgdi:waypoint x="2310.0" y="612.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow11" id="BPMNEdge_flow11">
+        <omgdi:waypoint x="982.0" y="465.0"/>
+        <omgdi:waypoint x="982.0" y="385.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow12" id="BPMNEdge_flow12">
+        <omgdi:waypoint x="982.0" y="345.0"/>
+        <omgdi:waypoint x="982.0" y="260.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow17" id="BPMNEdge_flow17">
+        <omgdi:waypoint x="800.0" y="520.0"/>
+        <omgdi:waypoint x="800.0" y="592.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow18" id="BPMNEdge_flow18">
+        <omgdi:waypoint x="962.0" y="365.0"/>
+        <omgdi:waypoint x="800.0" y="365.0"/>
+        <omgdi:waypoint x="800.0" y="465.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow20" id="BPMNEdge_flow20">
+        <omgdi:waypoint x="1002.0" y="365.0"/>
+        <omgdi:waypoint x="1110.0" y="365.0"/>
+        <omgdi:waypoint x="1110.0" y="125.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow21" id="BPMNEdge_flow21">
+        <omgdi:waypoint x="1035.0" y="232.0"/>
+        <omgdi:waypoint x="1110.0" y="232.0"/>
+        <omgdi:waypoint x="1110.0" y="125.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow22" id="BPMNEdge_flow22">
+        <omgdi:waypoint x="1090.0" y="105.0"/>
+        <omgdi:waypoint x="800.0" y="105.0"/>
+        <omgdi:waypoint x="800.0" y="465.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow23" id="BPMNEdge_flow23">
+        <omgdi:waypoint x="1130.0" y="105.0"/>
+        <omgdi:waypoint x="1286.0" y="105.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow28" id="BPMNEdge_flow28">
+        <omgdi:waypoint x="820.0" y="612.0"/>
+        <omgdi:waypoint x="1338.0" y="612.0"/>
+        <omgdi:waypoint x="1338.0" y="133.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow42" id="BPMNEdge_flow42">
+        <omgdi:waypoint x="2165.0" y="105.0"/>
+        <omgdi:waypoint x="2327.0" y="105.0"/>
+        <omgdi:waypoint x="2327.0" y="595.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow45" id="BPMNEdge_flow45">
+        <omgdi:waypoint x="1845.0" y="57.0"/>
+        <omgdi:waypoint x="1845.0" y="492.0"/>
+        <omgdi:waypoint x="1695.0" y="492.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow46" id="BPMNEdge_flow46">
+        <omgdi:waypoint x="1391.0" y="105.0"/>
+        <omgdi:waypoint x="1515.0" y="105.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow47" id="BPMNEdge_flow47">
+        <omgdi:waypoint x="2010.0" y="178.0"/>
+        <omgdi:waypoint x="2145.0" y="178.0"/>
+        <omgdi:waypoint x="2145.0" y="125.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow49" id="BPMNEdge_flow49">
+        <omgdi:waypoint x="1990.0" y="198.0"/>
+        <omgdi:waypoint x="1990.0" y="492.0"/>
+        <omgdi:waypoint x="1695.0" y="492.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow50" id="BPMNEdge_flow50">
+        <omgdi:waypoint x="1535.0" y="125.0"/>
+        <omgdi:waypoint x="1535.0" y="178.0"/>
+        <omgdi:waypoint x="1625.0" y="178.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow51" id="BPMNEdge_flow51">
+        <omgdi:waypoint x="1535.0" y="85.0"/>
+        <omgdi:waypoint x="1535.0" y="37.0"/>
+        <omgdi:waypoint x="1625.0" y="37.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow52" id="BPMNEdge_flow52">
+        <omgdi:waypoint x="1730.0" y="37.0"/>
+        <omgdi:waypoint x="1825.0" y="37.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow53" id="BPMNEdge_flow53">
+        <omgdi:waypoint x="1865.0" y="37.0"/>
+        <omgdi:waypoint x="1959.0" y="37.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow54" id="BPMNEdge_flow54">
+        <omgdi:waypoint x="2064.0" y="37.0"/>
+        <omgdi:waypoint x="2145.0" y="37.0"/>
+        <omgdi:waypoint x="2145.0" y="85.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow55" id="BPMNEdge_flow55">
+        <omgdi:waypoint x="1730.0" y="178.0"/>
+        <omgdi:waypoint x="1970.0" y="178.0"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

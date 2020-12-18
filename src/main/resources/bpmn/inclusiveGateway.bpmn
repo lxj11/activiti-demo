@@ -7,7 +7,9 @@
     <inclusiveGateway id="inclusivegateway1" name="Inclusive Gateway"></inclusiveGateway>
     <sequenceFlow id="flow2" sourceRef="usertask1" targetRef="inclusivegateway1"></sequenceFlow>
     <userTask id="usertask2" name="项目经理"></userTask>
-    <sequenceFlow id="flow3" name="是病假" sourceRef="inclusivegateway1" targetRef="usertask2"></sequenceFlow>
+    <sequenceFlow id="flow3" name="是病假" sourceRef="inclusivegateway1" targetRef="usertask2">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${sickLeave==true}]]></conditionExpression>
+    </sequenceFlow>
     <userTask id="usertask3" name="部门经理"></userTask>
     <sequenceFlow id="flow4" name="不是病假" sourceRef="inclusivegateway1" targetRef="usertask3">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[${sickLeave==false}]]></conditionExpression>
@@ -18,11 +20,11 @@
     <exclusiveGateway id="exclusivegateway1" name="Exclusive Gateway"></exclusiveGateway>
     <sequenceFlow id="flow7" sourceRef="inclusivegateway2" targetRef="exclusivegateway1"></sequenceFlow>
     <userTask id="usertask4" name="总经理"></userTask>
-    <sequenceFlow id="flow8" sourceRef="exclusivegateway1" targetRef="usertask4">
+    <sequenceFlow id="flow8" name="大于3天" sourceRef="exclusivegateway1" targetRef="usertask4">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[${day>3}]]></conditionExpression>
     </sequenceFlow>
     <endEvent id="endevent1" name="End"></endEvent>
-    <sequenceFlow id="flow9" sourceRef="exclusivegateway1" targetRef="endevent1">
+    <sequenceFlow id="flow9" name="小于等于三天" sourceRef="exclusivegateway1" targetRef="endevent1">
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[${day<=3}]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow10" sourceRef="usertask4" targetRef="endevent1"></sequenceFlow>
@@ -69,7 +71,7 @@
         <omgdi:waypoint x="562.0" y="180.0"></omgdi:waypoint>
         <omgdi:waypoint x="562.0" y="210.0"></omgdi:waypoint>
         <bpmndi:BPMNLabel>
-          <omgdc:Bounds height="16.0" width="33.0" x="458.0" y="160.0"></omgdc:Bounds>
+          <omgdc:Bounds height="16.0" width="100.0" x="458.0" y="160.0"></omgdc:Bounds>
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow4" id="BPMNEdge_flow4">
@@ -77,7 +79,7 @@
         <omgdi:waypoint x="262.0" y="180.0"></omgdi:waypoint>
         <omgdi:waypoint x="262.0" y="210.0"></omgdi:waypoint>
         <bpmndi:BPMNLabel>
-          <omgdc:Bounds height="16.0" width="100.0" x="271.0" y="160.0"></omgdc:Bounds>
+          <omgdc:Bounds height="16.0" width="44.0" x="271.0" y="160.0"></omgdc:Bounds>
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow5" id="BPMNEdge_flow5">
@@ -97,10 +99,16 @@
       <bpmndi:BPMNEdge bpmnElement="flow8" id="BPMNEdge_flow8">
         <omgdi:waypoint x="427.0" y="400.0"></omgdi:waypoint>
         <omgdi:waypoint x="520.0" y="400.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="16.0" width="100.0" x="437.0" y="400.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow9" id="BPMNEdge_flow9">
         <omgdi:waypoint x="407.0" y="420.0"></omgdi:waypoint>
         <omgdi:waypoint x="407.0" y="480.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="16.0" width="100.0" x="411.0" y="428.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge bpmnElement="flow10" id="BPMNEdge_flow10">
         <omgdi:waypoint x="572.0" y="428.0"></omgdi:waypoint>
