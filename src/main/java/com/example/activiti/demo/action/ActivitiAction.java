@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.activiti.engine.ProcessEngine;
 import org.activiti.engine.ProcessEngines;
+import org.activiti.engine.RepositoryService;
 import org.activiti.engine.history.HistoricTaskInstance;
 import org.activiti.engine.repository.Deployment;
 import org.activiti.engine.repository.ProcessDefinition;
@@ -41,8 +42,8 @@ public class ActivitiAction {
 			Deployment deploy = processEngine.getRepositoryService()
 					.createDeployment()
 					.name("请假申请")
-					.addClasspathResource("bpmn/inclusiveGateway.bpmn")
-					.addClasspathResource("bpmn/inclusiveGateway.png")
+					.addClasspathResource("bpmn/leave.bpmn")
+					.addClasspathResource("bpmn/leave.png")
 					.deploy();
 			//获取仓库服务的实例
 			System.out.println(deploy.getId() + "   " + deploy.getName());
